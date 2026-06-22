@@ -60,6 +60,7 @@ export default function ManifestoSection() {
         {/* LEFT COLUMN — Text Content */}
         <div
           ref={textRef}
+          className="manifesto-text-col"
           style={{
             position: "relative",
             display: "flex",
@@ -90,7 +91,7 @@ export default function ManifestoSection() {
               {/* Label */}
               <motion.span
                 variants={itemVariants}
-                className="label-style"
+                className="label-style manifesto-label"
                 style={{ display: "block", marginBottom: "2rem" }}
               >
                 Our Philosophy
@@ -99,6 +100,7 @@ export default function ManifestoSection() {
               {/* Pull Quote */}
               <motion.h2
                 variants={itemVariants}
+                className="manifesto-quote"
                 style={{
                   fontFamily: "var(--font-cormorant)",
                   fontWeight: 300,
@@ -116,6 +118,7 @@ export default function ManifestoSection() {
               {/* Thin Horizontal Red Rule */}
               <motion.div
                 variants={itemVariants}
+                className="manifesto-rule"
                 style={{
                   width: "60px",
                   height: "1px",
@@ -127,6 +130,7 @@ export default function ManifestoSection() {
               {/* Body Text — stacked on single column in the left panel */}
               <motion.div
                 variants={itemVariants}
+                className="manifesto-body"
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -212,11 +216,39 @@ export default function ManifestoSection() {
         @media (max-width: 767px) {
           .manifesto-sticky {
             grid-template-columns: 1fr !important;
-            grid-template-rows: 55vh 45vh !important;
+            grid-template-rows: 58vh 42vh !important;
           }
           .manifesto-canvas-col {
             border-left: none !important;
             border-top: 1px solid var(--border-subtle) !important;
+          }
+          .manifesto-text-col {
+            padding: 24px 20px !important;
+            justify-content: flex-start !important;
+            overflow-y: auto !important;
+          }
+          .manifesto-text-col::-webkit-scrollbar {
+            width: 4px !important;
+          }
+          .manifesto-text-col::-webkit-scrollbar-thumb {
+            background: var(--accent) !important;
+          }
+          .manifesto-label {
+            margin-bottom: 1rem !important;
+          }
+          .manifesto-quote {
+            font-size: 1.4rem !important;
+            margin-bottom: 1.25rem !important;
+          }
+          .manifesto-rule {
+            margin-bottom: 1.25rem !important;
+          }
+          .manifesto-body {
+            gap: 1rem !important;
+          }
+          .manifesto-body p {
+            font-size: 0.85rem !important;
+            line-height: 1.6 !important;
           }
         }
       `,
