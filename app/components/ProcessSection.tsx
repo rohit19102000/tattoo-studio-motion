@@ -304,6 +304,7 @@ export default function ProcessSection() {
   return (
     <section
       ref={containerRef}
+      className="process-section"
       style={{
         height: "600vh", // Pinned for 600vh total
         position: "relative",
@@ -314,6 +315,7 @@ export default function ProcessSection() {
       {/* Sticky Viewport */}
       <div
         ref={viewportRef}
+        className="process-viewport"
         style={{
           position: "sticky",
           top: 0,
@@ -389,6 +391,7 @@ export default function ProcessSection() {
 
         {/* Step Counter Strip (Left Edge) */}
         <div
+          className="process-counter-strip"
           style={{
             position: "absolute",
             left: "40px",
@@ -409,6 +412,7 @@ export default function ProcessSection() {
               <div
                 key={idx}
                 onClick={() => scrollToStep(idx)}
+                className={`process-counter-item ${isActive ? "active" : ""}`}
                 style={{
                   cursor: "pointer",
                   opacity,
@@ -430,6 +434,7 @@ export default function ProcessSection() {
                   }}
                 />
                 <div
+                  className="process-counter-text"
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -437,6 +442,7 @@ export default function ProcessSection() {
                   }}
                 >
                   <span
+                    className="process-counter-num"
                     style={{
                       fontFamily: "'Courier New', Courier, monospace",
                       color: "#c8a97e",
@@ -448,6 +454,7 @@ export default function ProcessSection() {
                     {step.num}
                   </span>
                   <span
+                    className="process-counter-title"
                     style={{
                       fontFamily: "Georgia, serif",
                       color: "#555",
@@ -467,6 +474,7 @@ export default function ProcessSection() {
 
         {/* 3-Column Content Layout */}
         <div
+          className="process-layout"
           style={{
             display: "grid",
             gridTemplateColumns: "140px 1fr 50px",
@@ -482,6 +490,7 @@ export default function ProcessSection() {
         >
           {/* Left Column */}
           <div
+            className="process-col-left"
             style={{
               display: "flex",
               flexDirection: "column",
@@ -492,6 +501,7 @@ export default function ProcessSection() {
             {/* Accent Label */}
             <div
               ref={accentRef}
+              className="process-accent"
               style={{
                 fontFamily: "'Courier New', Courier, monospace",
                 fontSize: "0.65rem",
@@ -506,10 +516,11 @@ export default function ProcessSection() {
             </div>
 
             {/* Big Outline Number Container */}
-            <div style={{ position: "relative", width: "100%" }}>
+            <div className="process-num-container" style={{ position: "relative", width: "100%" }}>
               {/* Gold Ink Line Overlay */}
               <div
                 ref={inkLineRef}
+                className="process-ink-line"
                 style={{
                   position: "absolute",
                   left: "0",
@@ -525,6 +536,7 @@ export default function ProcessSection() {
               {/* Outline Number */}
               <div
                 ref={bigNumberRef}
+                className="process-big-number"
                 style={{
                   fontFamily: "Georgia, serif",
                   fontSize: "clamp(96px, 12vw, 160px)",
@@ -543,6 +555,7 @@ export default function ProcessSection() {
             {/* Act Label */}
             <div
               ref={actRef}
+              className="process-act"
               style={{
                 fontFamily: "'Courier New', Courier, monospace",
                 fontSize: "0.75rem",
@@ -558,6 +571,7 @@ export default function ProcessSection() {
 
           {/* Center Column */}
           <div
+            className="process-col-center"
             style={{
               display: "flex",
               flexDirection: "column",
@@ -568,6 +582,7 @@ export default function ProcessSection() {
             {/* Step Title */}
             <h2
               ref={titleRef}
+              className="process-title"
               style={{
                 fontFamily: "Georgia, serif",
                 fontSize: "clamp(32px, 4vw, 52px)",
@@ -583,6 +598,7 @@ export default function ProcessSection() {
             {/* Word-Reveal Body Copy */}
             <p
               ref={bodyParagraphRef}
+              className="process-body-para"
               style={{
                 fontFamily: "Georgia, serif",
                 fontSize: "17px",
@@ -611,6 +627,7 @@ export default function ProcessSection() {
             {/* Detail Footnote */}
             <div
               ref={detailRef}
+              className="process-detail"
               style={{
                 width: "100%",
                 maxWidth: "600px",
@@ -620,6 +637,7 @@ export default function ProcessSection() {
               }}
             >
               <div
+                className="process-detail-text"
                 style={{
                   fontFamily: "'Courier New', Courier, monospace",
                   fontSize: "0.72rem",
@@ -634,6 +652,7 @@ export default function ProcessSection() {
 
           {/* Right Column */}
           <div
+            className="process-col-right"
             style={{
               display: "flex",
               justifyContent: "center",
@@ -670,6 +689,87 @@ export default function ProcessSection() {
           </div>
         </div>
       </div>
+
+      {/* Responsive overrides */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @media (max-width: 1024px) {
+          .process-counter-strip {
+            left: 24px !important;
+            gap: 1.5rem !important;
+          }
+          .process-counter-title {
+            display: none !important;
+          }
+          .process-layout {
+            grid-template-columns: 1fr !important;
+            gap: 2rem !important;
+            padding-left: 90px !important;
+            padding-right: 40px !important;
+            max-width: 650px !important;
+          }
+          .process-col-right {
+            display: none !important;
+          }
+          .process-big-number {
+            font-size: clamp(80px, 10vw, 120px) !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .process-counter-strip {
+            left: 16px !important;
+            gap: 1.25rem !important;
+          }
+          .process-layout {
+            padding-left: 64px !important;
+            padding-right: 24px !important;
+            gap: 1.5rem !important;
+          }
+          .process-big-number {
+            font-size: clamp(64px, 12vw, 88px) !important;
+          }
+          .process-title {
+            font-size: clamp(28px, 6vw, 36px) !important;
+            margin-bottom: 1rem !important;
+          }
+          .process-body-para {
+            font-size: 15px !important;
+            line-height: 1.75 !important;
+            margin-bottom: 1.5rem !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .process-counter-strip {
+            left: 12px !important;
+            gap: 1rem !important;
+          }
+          .process-layout {
+            padding-left: 52px !important;
+            padding-right: 16px !important;
+            gap: 1rem !important;
+          }
+          .process-big-number {
+            font-size: 56px !important;
+          }
+          .process-title {
+            font-size: 22px !important;
+            margin-bottom: 0.75rem !important;
+          }
+          .process-body-para {
+            font-size: 13.5px !important;
+            line-height: 1.6 !important;
+            margin-bottom: 1rem !important;
+          }
+          .process-detail {
+            padding-top: 0.75rem !important;
+          }
+        }
+      `,
+        }}
+      />
     </section>
   );
 }
