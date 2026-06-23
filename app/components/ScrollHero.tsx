@@ -13,34 +13,67 @@ export default function ScrollHero() {
   const [loadedFirst, setLoadedFirst] = useState(false);
 
   useEffect(() => {
-    // 1. Preload all images
-    const images: HTMLImageElement[] = [];
-    let loadedCount = 0;
+    const loadedImages = new Map<number, HTMLImageElement>();
+    let isCleanedUp = false;
 
-    for (let i = 1; i <= FRAME_COUNT; i++) {
-      const img = new Image();
-      const frameNum = String(i).padStart(4, "0");
-      img.src = `/frames/frame_${frameNum}.jpg`;
-      img.onload = () => {
-        loadedCount++;
-        if (i === 1) {
-          setLoadedFirst(true);
-          // Draw first frame immediately once loaded
-          draw(0);
-        }
-      };
-      images.push(img);
+    // 1. Helper to build URL
+    function getImageUrl(index: number) {
+      const frameNum = String(index + 1).padStart(4, "0");
+      return `/frames/frame_${frameNum}.jpg`;
     }
-    imagesRef.current = images;
 
-    // 2. Cover-fit draw function
+    // 2. Helper to request an image
+    function loadImage(index: number, onLoad?: (img: HTMLImageElement) => void) {
+      if (index < 0 || index >= FRAME_COUNT || isCleanedUp) return;
+
+      const cached = loadedImages.get(index);
+      if (cached) {
+        if (onLoad) onLoad(cached);
+        return;
+      }
+
+      const img = new Image();
+      img.src = getImageUrl(index);
+      img.onload = () => {
+        if (isCleanedUp) return;
+        loadedImages.set(index, img);
+
+        // Limit cache size to 60 images to prevent browser crash/OOM
+        if (loadedImages.size > 60) {
+          let furthestIdx = -1;
+          let maxDist = -1;
+          for (const key of loadedImages.keys()) {
+            // Keep first frame always
+            if (key === 0) continue;
+            const dist = Math.abs(key - currentIdxRef.current);
+            if (dist > maxDist) {
+              maxDist = dist;
+              furthestIdx = key;
+            }
+          }
+          if (furthestIdx !== -1) {
+            loadedImages.delete(furthestIdx);
+          }
+        }
+
+        if (onLoad) onLoad(img);
+      };
+    }
+
+    // Load first frame immediately
+    loadImage(0, (img) => {
+      setLoadedFirst(true);
+      draw(0);
+    });
+
+    // 3. Cover-fit draw function
     function draw(index: number) {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      const img = imagesRef.current[index];
+      const img = loadedImages.get(index);
       if (!img || !img.complete) return;
 
       const dpr = window.devicePixelRatio || 1;
@@ -71,7 +104,7 @@ export default function ScrollHero() {
       }
     }
 
-    // 3. requestAnimationFrame loop for scroll syncing
+    // 4. requestAnimationFrame loop for scroll syncing
     let rafId: number;
 
     const tick = () => {
@@ -90,7 +123,17 @@ export default function ScrollHero() {
       const targetIdx = Math.round(progress * (FRAME_COUNT - 1));
 
       if (targetIdx !== currentIdxRef.current) {
-        draw(targetIdx);
+        loadImage(targetIdx, (img) => {
+          if (isCleanedUp) return;
+          draw(targetIdx);
+        });
+        currentIdxRef.current = targetIdx;
+
+        // Preload next 5 and previous 5 frames
+        for (let offset = 1; offset <= 5; offset++) {
+          loadImage(targetIdx + offset);
+          loadImage(targetIdx - offset);
+        }
       }
 
       rafId = requestAnimationFrame(tick);
@@ -98,7 +141,7 @@ export default function ScrollHero() {
 
     rafId = requestAnimationFrame(tick);
 
-    // 4. Resize handler
+    // 5. Resize handler
     const handleResize = () => {
       if (currentIdxRef.current !== -1) {
         draw(currentIdxRef.current);
@@ -106,10 +149,12 @@ export default function ScrollHero() {
     };
     window.addEventListener("resize", handleResize);
 
-    // 5. Cleanup
+    // 6. Cleanup
     return () => {
+      isCleanedUp = true;
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", handleResize);
+      loadedImages.clear();
     };
   }, []);
 

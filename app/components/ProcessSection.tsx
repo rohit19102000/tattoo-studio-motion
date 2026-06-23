@@ -75,26 +75,61 @@ export default function ProcessSection() {
   const activeIdxRef = useRef(0);
 
   useEffect(() => {
-    // 1. Preload all 4 steps of image frames
-    const stepCount = 4;
+    const loadedImages = new Map<string, HTMLImageElement>();
+    let isCleanedUp = false;
 
-    for (let s = 0; s < stepCount; s++) {
-      const stepIdx = s + 1;
-      const stepImages: HTMLImageElement[] = [];
-      for (let i = 1; i <= FRAME_COUNT; i++) {
-        const img = new Image();
-        const frameNum = String(i).padStart(4, "0");
-        img.src = `/ritual_frames/step${stepIdx}/frame_${frameNum}.jpg`;
-        img.onload = () => {
-          // Draw first frame of first step once loaded
-          if (s === 0 && i === 1) {
-            draw(0, 0);
-          }
-        };
-        stepImages.push(img);
-      }
-      imagesRef.current[s] = stepImages;
+    // Helper to build URL
+    function getImageUrl(stepIndex: number, frameIndex: number) {
+      const stepIdx = stepIndex + 1;
+      const frameNum = String(frameIndex + 1).padStart(4, "0");
+      return `/ritual_frames/step${stepIdx}/frame_${frameNum}.jpg`;
     }
+
+    // Helper to load image
+    function loadImage(stepIndex: number, frameIndex: number, onLoad?: (img: HTMLImageElement) => void) {
+      if (stepIndex < 0 || stepIndex >= 4 || frameIndex < 0 || frameIndex >= FRAME_COUNT || isCleanedUp) return;
+
+      const key = `${stepIndex}_${frameIndex}`;
+      const cached = loadedImages.get(key);
+      if (cached) {
+        if (onLoad) onLoad(cached);
+        return;
+      }
+
+      const img = new Image();
+      img.src = getImageUrl(stepIndex, frameIndex);
+      img.onload = () => {
+        if (isCleanedUp) return;
+        loadedImages.set(key, img);
+
+        // Limit cache size to 60 images to prevent browser crash/OOM
+        if (loadedImages.size > 60) {
+          let furthestKey = "";
+          let maxDist = -1;
+          for (const k of loadedImages.keys()) {
+            if (k === "0_0") continue; // keep first step first frame
+            const [sStr, fStr] = k.split("_");
+            const sVal = parseInt(sStr, 10);
+            const fVal = parseInt(fStr, 10);
+            const dist = Math.abs(sVal - currentStepRef.current) * FRAME_COUNT + Math.abs(fVal - currentIdxRef.current);
+            if (dist > maxDist) {
+              maxDist = dist;
+              furthestKey = k;
+            }
+          }
+          if (furthestKey !== "") {
+            loadedImages.delete(furthestKey);
+          }
+        }
+
+        if (onLoad) onLoad(img);
+      };
+    }
+
+    // Load first frame of first step immediately
+    loadImage(0, 0, () => {
+      draw(0, 0);
+    });
 
     // 2. Cover-fit draw function for active step frame
     function draw(stepIndex: number, frameIndex: number) {
@@ -103,9 +138,8 @@ export default function ProcessSection() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      const stepImages = imagesRef.current[stepIndex];
-      if (!stepImages) return;
-      const img = stepImages[frameIndex];
+      const key = `${stepIndex}_${frameIndex}`;
+      const img = loadedImages.get(key);
       if (!img || !img.complete) return;
 
       const dpr = window.devicePixelRatio || 1;
@@ -169,7 +203,31 @@ export default function ProcessSection() {
       // Draw canvas background frame based on activeStepIndex and localProgress
       const targetFrameIdx = Math.round(localProgress * (FRAME_COUNT - 1));
       if (activeStepIndex !== currentStepRef.current || targetFrameIdx !== currentIdxRef.current) {
-        draw(activeStepIndex, targetFrameIdx);
+        loadImage(activeStepIndex, targetFrameIdx, (img) => {
+          if (isCleanedUp) return;
+          draw(activeStepIndex, targetFrameIdx);
+        });
+        currentIdxRef.current = targetFrameIdx;
+        currentStepRef.current = activeStepIndex;
+
+        // Preload next 5 and previous 5 frames within bounds
+        for (let offset = 1; offset <= 5; offset++) {
+          let nextFrame = targetFrameIdx + offset;
+          let nextStep = activeStepIndex;
+          if (nextFrame >= FRAME_COUNT) {
+            nextFrame = nextFrame - FRAME_COUNT;
+            nextStep = Math.min(3, nextStep + 1);
+          }
+          loadImage(nextStep, nextFrame);
+
+          let prevFrame = targetFrameIdx - offset;
+          let prevStep = activeStepIndex;
+          if (prevFrame < 0) {
+            prevFrame = FRAME_COUNT + prevFrame;
+            prevStep = Math.max(0, prevStep - 1);
+          }
+          loadImage(prevStep, prevFrame);
+        }
       }
 
       // Background Color Interpolation for viewport and overlay
@@ -187,7 +245,7 @@ export default function ProcessSection() {
       const colorVal = Math.round(v);
 
       if (overlayRef.current) {
-        overlayRef.current.style.backgroundColor = `rgba(${colorVal}, ${colorVal}, ${colorVal}, 0.88)`;
+        overlayRef.current.style.backgroundColor = `rgba(${colorVal}, ${colorVal}, ${colorVal}, 0.70)`;
       }
       if (viewportRef.current) {
         const hex = colorVal.toString(16).padStart(2, "0");
@@ -282,8 +340,10 @@ export default function ProcessSection() {
     window.addEventListener("resize", handleResize);
 
     return () => {
+      isCleanedUp = true;
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", handleResize);
+      loadedImages.clear();
     };
   }, []);
 
@@ -347,7 +407,7 @@ export default function ProcessSection() {
           style={{
             position: "absolute",
             inset: 0,
-            backgroundColor: "rgba(8, 8, 8, 0.88)",
+            backgroundColor: "rgba(8, 8, 8, 0.70)",
             pointerEvents: "none",
             zIndex: 2,
             transition: "background-color 0.1s ease",
